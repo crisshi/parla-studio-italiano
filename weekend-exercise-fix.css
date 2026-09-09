@@ -1,0 +1,52 @@
+.weekend-sort-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 20px;
+}
+
+.weekend-sort-card {
+  overflow: hidden;
+  background: #fffdf9;
+  border: 1px solid #d8d2c6;
+}
+
+.weekend-sort-image {
+  aspect-ratio: 1;
+  background: url('cosa-fa-nel-fine-settimana-attivita.png') no-repeat;
+  background-size: 300% 200%;
+}
+
+.weekend-sort-card:nth-child(1) .weekend-sort-image { background-position: 100% 100%; }
+.weekend-sort-card:nth-child(2) .weekend-sort-image { background-position: 50% 0; }
+.weekend-sort-card:nth-child(3) .weekend-sort-image { background-position: 100% 0; }
+.weekend-sort-card:nth-child(4) .weekend-sort-image { background-position: 0 100%; }
+
+.weekend-sort-body {
+  display: flex;
+  min-height: 145px;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.weekend-sort-body h4 {
+  margin: 0;
+  color: #172942;
+  font-size: 18px;
+}
+
+.weekend-sort-body select {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+}
+
+.weekend-sort-body .audio-orb {
+  align-self: center;
+  margin: 2px auto 0 !important;
+}
+
+@media (max-width: 900px) {
+  .weekend-sort-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
