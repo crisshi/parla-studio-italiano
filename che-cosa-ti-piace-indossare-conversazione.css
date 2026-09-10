@@ -6,3 +6,6 @@
 .reading p:has(.article-word.is-speaking){background:#fff5cd}
 .reading .spoken .article-word{display:inline-block;margin:0 1px;transition:background-color .12s ease,color .12s ease,box-shadow .12s ease}
 .reading .spoken .article-word.is-speaking{background:#f2c94c!important;color:#102844!important;box-shadow:0 0 0 3px #f2c94c!important;border-radius:3px}
+
+/* Show the complete hero illustration without cropping people */
+.hero img{display:block;width:100%!important;height:auto!important;max-height:none!important;aspect-ratio:auto!important;object-fit:contain!important;object-position:center!important;background:#efe5d5}
