@@ -1,5 +1,5 @@
 const lessonBehavior = document.createElement('script');
-lessonBehavior.src = location.pathname.includes('quanti-anni-hai-conversazione') ? 'quanti-anni-hai-conversazione.js' : 'come-posso-contattarti-conversazione.js';
+lessonBehavior.src = location.pathname.includes('quanti-anni-hai-conversazione') ? 'quanti-anni-hai-conversazione.js' : 'come-posso-contattarti-conversazione.js?v=6';
 document.head.append(lessonBehavior);
 
 const familyLayout = document.createElement('style');
