@@ -44,7 +44,12 @@ tabs.forEach((tab) => tab.addEventListener('click', () => {
   panels.forEach((panel) => panel.classList.toggle('active', panel.id === tab.dataset.tab));
 }));
 
-function playLocal(button){followSession+=1;if(window.lessonAudio){window.lessonAudio.pause();window.lessonAudio.currentTime=0}const a=new Audio(`audio/${button.dataset.audio}.mp3?v=2`);window.lessonAudio=a;reading=true;status.textContent='正在播放本地意大利语 MP3…';a.onended=()=>{reading=false;status.textContent='播放完成。'};a.onerror=()=>{reading=false;status.textContent='音频加载失败，请刷新后重试。'};a.play().catch(()=>status.textContent='浏览器阻止播放，请再次点击喇叭。')}
+const readingParagraphs=[...document.querySelectorAll('.reading p')];
+function wrapWords(paragraph){[...paragraph.childNodes].forEach(node=>{if(node.nodeType!==Node.TEXT_NODE||!node.textContent.trim())return;const fragment=document.createDocumentFragment();node.textContent.split(/(\s)/).forEach(piece=>{if(!piece.trim()){fragment.append(piece);return}const span=document.createElement('span');span.className='article-word';span.textContent=piece;fragment.append(span)});node.replaceWith(fragment)})}
+readingParagraphs.forEach(wrapWords);
+function attachHighlight(audio,paragraph){if(!paragraph)return;const words=[...paragraph.querySelectorAll('.article-word')];let old=-1;const update=()=>{if(!audio.duration||!words.length)return;const i=Math.min(words.length-1,Math.floor(audio.currentTime/audio.duration*words.length));if(i!==old){words[old]?.classList.remove('is-speaking');words[i]?.classList.add('is-speaking');old=i}};audio.addEventListener('timeupdate',update);audio.addEventListener('ended',()=>words[old]?.classList.remove('is-speaking'),{once:true})}
+
+function playLocal(button){followSession+=1;if(window.lessonAudio){window.lessonAudio.pause();window.lessonAudio.currentTime=0}const a=new Audio(`audio/${button.dataset.audio}.mp3?v=2`);window.lessonAudio=a;attachHighlight(a,button.closest('.reading p'));reading=true;status.textContent='正在播放本地意大利语 MP3…';a.onended=()=>{reading=false;status.textContent='播放完成。'};a.onerror=()=>{reading=false;status.textContent='音频加载失败，请刷新后重试。'};a.play().catch(()=>status.textContent='浏览器阻止播放，请再次点击喇叭。')}
 document.querySelectorAll('[data-say][data-audio]').forEach(b=>{b.classList.add('audio-orb');b.type='button';b.textContent='';b.onclick=()=>playLocal(b)});
 
 /* ── 词汇工作台 ── */
@@ -60,7 +65,7 @@ choose(0);
 
 /* ── 对话全文顺序播放（本地 MP3 + 暂停/继续） ── */
 const allArticle=document.querySelector('#all-audio'),pause=document.querySelector('#pause');const playerProgress=document.createElement('input');playerProgress.type='range';playerProgress.className='player-progress';playerProgress.min=0;playerProgress.max=100;playerProgress.value=0;const playerTime=document.createElement('span');playerTime.className='player-time';playerTime.textContent='00:00';pause.after(playerProgress,playerTime);let playlist=[],playlistIndex=0,playlistActive=false;
-function playNext(){if(!playlistActive||playlistIndex>=playlist.length){playlistActive=false;reading=false;status.textContent='全文播放完成。';return}const b=playlist[playlistIndex++],a=new Audio(`audio/${b.dataset.audio}.mp3?v=2`);window.lessonAudio=a;reading=true;a.ontimeupdate=()=>{if(a.duration){playerProgress.value=a.currentTime/a.duration*100;playerTime.textContent=`${Math.floor(a.currentTime)}s / ${Math.ceil(a.duration)}s`}};a.onended=playNext;a.onerror=playNext;a.play().catch(()=>status.textContent='浏览器阻止播放，请再次点击播放。')}
+function playNext(){if(!playlistActive||playlistIndex>=playlist.length){playlistActive=false;reading=false;status.textContent='全文播放完成。';return}const b=playlist[playlistIndex++],a=new Audio(`audio/${b.dataset.audio}.mp3?v=2`);window.lessonAudio=a;attachHighlight(a,b.closest('.reading p'));reading=true;a.ontimeupdate=()=>{if(a.duration){playerProgress.value=a.currentTime/a.duration*100;playerTime.textContent=`${Math.floor(a.currentTime)}s / ${Math.ceil(a.duration)}s`}};a.onended=playNext;a.onerror=playNext;a.play().catch(()=>status.textContent='浏览器阻止播放，请再次点击播放。')}
 allArticle.onclick=()=>{window.lessonAudio?.pause();playlist=[...document.querySelectorAll('.reading [data-say][data-audio]')];playlistIndex=0;playlistActive=true;status.textContent='正在播放本地意大利语 MP3…';playNext()};pause.onclick=()=>{const a=window.lessonAudio;if(!a)return;if(a.paused){a.play();pause.textContent='Pausa'}else{a.pause();pause.textContent='Continua'}};playerProgress.oninput=()=>{const a=window.lessonAudio;if(a?.duration)a.currentTime=a.duration*Number(playerProgress.value)/100};
 
 document.querySelectorAll('.cn-toggle').forEach((toggle) => {
