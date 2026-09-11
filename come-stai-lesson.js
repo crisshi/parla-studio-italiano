@@ -44,24 +44,8 @@ tabs.forEach((tab) => tab.addEventListener('click', () => {
   panels.forEach((panel) => panel.classList.toggle('active', panel.id === tab.dataset.tab));
 }));
 
-function speak(text) {
-  followSession += 1;
-  speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = 'it-IT';
-  utterance.rate = 1.0;
-  utterance.onstart = () => { reading = true; status.textContent = 'Lettura italiana in corso…'; };
-  utterance.onend = () => { reading = false; status.textContent = 'Lettura terminata.'; };
-  utterance.onerror = () => { reading = false; status.textContent = 'Lettura annullata.'; };
-  speechSynthesis.speak(utterance);
-}
-
-document.querySelectorAll('[data-say]').forEach((button) => {
-  button.classList.add('audio-orb');
-  button.type = 'button';
-  button.textContent = '';
-  button.addEventListener('click', () => speak(button.dataset.say));
-});
+function playLocal(button){followSession+=1;if(window.lessonAudio){window.lessonAudio.pause();window.lessonAudio.currentTime=0}const a=new Audio(`audio/${button.dataset.audio}.mp3?v=2`);window.lessonAudio=a;reading=true;status.textContent='正在播放本地意大利语 MP3…';a.onended=()=>{reading=false;status.textContent='播放完成。'};a.onerror=()=>{reading=false;status.textContent='音频加载失败，请刷新后重试。'};a.play().catch(()=>status.textContent='浏览器阻止播放，请再次点击喇叭。')}
+document.querySelectorAll('[data-say][data-audio]').forEach(b=>{b.classList.add('audio-orb');b.type='button';b.textContent='';b.onclick=()=>playLocal(b)});
 
 /* ── 词汇工作台 ── */
 const wordsPanel = document.querySelector('#words');
@@ -74,45 +58,11 @@ function choose(index) { detail.replaceChildren(rows[index]); list.querySelector
 rows.forEach((row, index) => { const item = document.createElement('button'); item.type = 'button'; item.className = 'word-select'; item.innerHTML = `<small>${String(index + 1).padStart(2, '0')}</small><span>${row.querySelector('h3').childNodes[0].textContent.trim()}</span>`; item.onclick = () => choose(index); list.append(item); });
 choose(0);
 
-/* ── 对话全文顺序播放（正常速度、按句播放 + 暂停/继续） ── */
-const allArticle = document.querySelector('#all-audio');
-const pause = document.querySelector('#pause');
-const playerProgress = document.createElement('input');
-playerProgress.type = 'range'; playerProgress.className = 'player-progress'; playerProgress.min = '0'; playerProgress.max = '100'; playerProgress.value = '0'; playerProgress.disabled = true;
-const playerTime = document.createElement('span'); playerTime.className = 'player-time'; playerTime.textContent = '00:00';
-pause.after(playerProgress, playerTime);
-const progressStyle = document.createElement('style');
-progressStyle.textContent = '.player-progress{flex:1;min-width:100px;accent-color:#d85045}.player-time{white-space:nowrap;font-size:12px!important;color:#697386!important;margin-left:0!important}';
-document.head.append(progressStyle);
-let elapsedSeconds = 0, progressTimer = null;
-function formatTime(seconds) { return `00:${String(Math.max(0, Math.floor(seconds))).padStart(2, '0')}`; }
-function startProgress() { window.clearInterval(progressTimer); elapsedSeconds = 0; playerProgress.value = '0'; playerTime.textContent = '00:00'; progressTimer = window.setInterval(() => { if (!speechSynthesis.paused && reading) { elapsedSeconds += .2; playerTime.textContent = formatTime(elapsedSeconds); playerProgress.value = String(Math.min(96, Number(playerProgress.value) + .4)); } }, 200); }
-function finishProgress() { window.clearInterval(progressTimer); playerProgress.value = '100'; playerTime.textContent = formatTime(elapsedSeconds); }
-function pauseLabel(resume) { pause.classList.toggle('is-resume', resume); pause.innerHTML = `<span class="pause-symbol"></span><span>${resume ? 'Continua' : 'Pausa'}</span>`; }
-function dialogSentenceText(paragraph) {
-  const clone = paragraph.cloneNode(true);
-  clone.querySelectorAll('em.who, button').forEach((el) => el.remove());
-  return clone.textContent.replace(/\s+/g, ' ').trim();
-}
-let dialogSentences = [], dialogIndex = 0, dialogPaused = false;
-function playDialogFromCurrent() {
-  followSession += 1; const session = followSession; speechSynthesis.cancel(); reading = true; dialogPaused = false; pauseLabel(false);
-  const next = () => { if (session !== followSession || dialogPaused) return; if (dialogIndex >= dialogSentences.length) { reading = false; finishProgress(); status.textContent = 'Lettura terminata.'; return; } const utterance = new SpeechSynthesisUtterance(dialogSentences[dialogIndex]); utterance.lang = 'it-IT'; utterance.rate = 1; utterance.onend = () => { dialogIndex += 1; window.setTimeout(next, 80); }; utterance.onerror = () => { dialogIndex += 1; next(); }; speechSynthesis.speak(utterance); };
-  next();
-}
-allArticle.onclick = () => { dialogSentences = [...document.querySelectorAll('.reading p')].map(dialogSentenceText).filter(Boolean); dialogIndex = 0; status.textContent = 'Lettura italiana in corso…'; startProgress(); playDialogFromCurrent(); };
-pause.onclick = () => {
-  if (!reading) return;
-  if (dialogPaused) {
-    speechSynthesis.resume();
-    window.setTimeout(() => speechSynthesis.resume(), 80);
-    dialogPaused = false; pauseLabel(false); status.textContent = 'Lettura ripresa.';
-  } else {
-    speechSynthesis.pause(); dialogPaused = true; pauseLabel(true); status.textContent = 'Lettura in pausa.';
-  }
-};
+/* ── 对话全文顺序播放（本地 MP3 + 暂停/继续） ── */
+const allArticle=document.querySelector('#all-audio'),pause=document.querySelector('#pause');const playerProgress=document.createElement('input');playerProgress.type='range';playerProgress.className='player-progress';playerProgress.min=0;playerProgress.max=100;playerProgress.value=0;const playerTime=document.createElement('span');playerTime.className='player-time';playerTime.textContent='00:00';pause.after(playerProgress,playerTime);let playlist=[],playlistIndex=0,playlistActive=false;
+function playNext(){if(!playlistActive||playlistIndex>=playlist.length){playlistActive=false;reading=false;status.textContent='全文播放完成。';return}const b=playlist[playlistIndex++],a=new Audio(`audio/${b.dataset.audio}.mp3?v=2`);window.lessonAudio=a;reading=true;a.ontimeupdate=()=>{if(a.duration){playerProgress.value=a.currentTime/a.duration*100;playerTime.textContent=`${Math.floor(a.currentTime)}s / ${Math.ceil(a.duration)}s`}};a.onended=playNext;a.onerror=playNext;a.play().catch(()=>status.textContent='浏览器阻止播放，请再次点击播放。')}
+allArticle.onclick=()=>{window.lessonAudio?.pause();playlist=[...document.querySelectorAll('.reading [data-say][data-audio]')];playlistIndex=0;playlistActive=true;status.textContent='正在播放本地意大利语 MP3…';playNext()};pause.onclick=()=>{const a=window.lessonAudio;if(!a)return;if(a.paused){a.play();pause.textContent='Pausa'}else{a.pause();pause.textContent='Continua'}};playerProgress.oninput=()=>{const a=window.lessonAudio;if(a?.duration)a.currentTime=a.duration*Number(playerProgress.value)/100};
 
-/* ── 中文显示/隐藏 ── */
 document.querySelectorAll('.cn-toggle').forEach((toggle) => {
   toggle.setAttribute('aria-pressed', 'false');
   const scope = toggle.dataset.scope ? document.querySelector(toggle.dataset.scope) : toggle.closest('.section-head').nextElementSibling;
